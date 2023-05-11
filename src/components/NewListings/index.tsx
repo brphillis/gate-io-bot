@@ -21,6 +21,8 @@ const NewListings = (props: Props) => {
         currencies
       )) as Currency[];
 
+      console.log("current found", foundCurrencies);
+
       if (foundCurrencies && foundCurrencies.length > 0) {
         console.log("Found Currencies");
         setNewCurrencies([...foundCurrencies]);
@@ -47,32 +49,57 @@ const NewListings = (props: Props) => {
   }, []);
 
   return (
-    <div className="flex flex-col items-center justify-between min-h-screen p-24">
+    <div className="flex flex-col items-center justify-center p-4 border border-white w-max h-max">
       <div>
-        <button onClick={() => setSearching(true)}>start</button>
-        <br />
-        <br />
-        <button onClick={() => setSearching(false)}>stop</button>
-        <br />
-        <br />
-        <h1>Newly Listed Currencies ...</h1>
-        <div className="max-h-[200px] overflow-y-scroll">
-          {newCurrencies.length > 0 &&
-            newCurrencies.map(({ currency, delisted }: Currency) => {
-              if (!delisted)
-                return (
-                  <div
-                    key={
-                      currency + Math.floor(Math.random() * 9999999).toString()
-                    }
-                  >
-                    {currency}
-                  </div>
-                );
-            })}
+        <div className="flex flex-col items-center justify-center">
+          <p>{`${
+            searching ? "Searching..." : "Not Searching"
+          } - Query ${queryCount}`}</p>
+        </div>
+
+        <div className="flex flex-row items-center justify-center gap-6 m-6">
+          <button
+            className="p-2 border border-white"
+            onClick={() => setSearching(true)}
+          >
+            start
+          </button>
+
+          <button
+            className="p-2 border border-white"
+            onClick={() => setSearching(false)}
+          >
+            stop
+          </button>
+        </div>
+
+        <div>
+          <div>Newly Listed Currencies ...</div>
+          {newCurrencies.length > 0 && (
+            <div className="max-h-[200px] overflow-y-scroll bg-slate-400 text-black p-2">
+              {newCurrencies.map(({ currency, delisted }: Currency) => {
+                if (!delisted)
+                  return (
+                    <div
+                      key={
+                        currency +
+                        Math.floor(Math.random() * 9999999).toString()
+                      }
+                    >
+                      {currency}
+                    </div>
+                  );
+              })}
+            </div>
+          )}
+          {newCurrencies.length === 0 && (
+            <div className="text-center">
+              {searching ? "loading more..." : "search"}
+            </div>
+          )}
         </div>
       </div>
-      <div>
+      <div className="mt-4">
         <h1>Current Currencies ...</h1>
         <div className="max-h-[200px] overflow-y-scroll">
           {currencies &&

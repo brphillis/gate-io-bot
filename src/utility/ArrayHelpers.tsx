@@ -3,7 +3,7 @@ export async function filterArrayDifference(array1: any, array2: any) {
     const filteredArray = await Promise.all(
       array1.map(async (obj1: any) => {
         const isPresentInArray2 = await array2.some(
-          (obj2: any) => obj2.currency === obj1.currency
+          (obj2: any) => obj2.currency_pair === obj1.currency_pair
         );
         return !isPresentInArray2 ? obj1 : null;
       })

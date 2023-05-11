@@ -1,22 +1,107 @@
 "use server";
 
+import { createHash, createHmac } from "crypto";
+import { Order } from "gate-api";
+import { ApiKeyAuth } from "gate-api";
 import { SpotApi } from "gate-api";
 import { ApiClient } from "gate-api";
+import { request } from "https";
+// import { ApiKeyAuth } from "gate-api";
 
 const client = new ApiClient().setApiKeySecret(
   process.env.NEXT_PUBLIC_GATEIO_NORMAL!,
   process.env.NEXT_PUBLIC_GATEIO_SECRET!
 );
 
+const spotApi = new SpotApi(client);
+
+const genSign = (
+  method: string,
+  url: string,
+  query_string: string,
+  payload_string: string
+) => {
+  const key = process.env.NEXT_PUBLIC_GATEIO_NORMAL!;
+  const secret = process.env.NEXT_PUBLIC_GATEIO_SECRET!;
+
+  const t = Math.floor(Date.now() / 1000);
+  const m = createHash("sha512");
+  m.update((payload_string || "").toString(), "utf-8");
+  const hashed_payload = m.digest("hex");
+  const s = `${method}\n${url}\n${query_string || ""}\n${hashed_payload}\n${t}`;
+  const sign = createHmac("sha512", secret).update(s, "utf-8").digest("hex");
+
+  return { KEY: key, Timestamp: t.toString(), SIGN: sign };
+};
+
 export const GetCurrencies = async () => {
-  const api = await new SpotApi(client);
   let currencies;
-  await api.listCurrencies().then(
-    (value: any) => (currencies = value),
+  await spotApi.listCurrencies().then(
+    (value: any) => (currencies = value.body),
     (error: any) => console.error(error)
   );
-  console.log(currencies);
-  return JSON.parse(JSON.stringify(currencies!.body));
+  if (currencies) {
+    return JSON.parse(JSON.stringify(currencies));
+  }
+};
+
+export const GetPrices = async () => {
+  const opts = {
+    // currencyPair: "USDT",
+    timezone: "utc0",
+  };
+  let results;
+  await spotApi.listTickers(opts).then(
+    (value: any) => {
+      results = value.body.sort(alphabeticalTickers);
+    },
+    (error: any) => {
+      return error;
+    }
+  );
+  return JSON.parse(JSON.stringify(results));
+};
+
+export const CreateOrder = async (order: Order) => {
+  const host = "https://api.gateio.ws";
+  const prefix = "/api/v4";
+  const headers = {
+    Accept: "application/json",
+    "Content-Type": "application/json",
+  };
+
+  const url = "/spot/orders";
+  const query_param = "";
+  const body = JSON.stringify(order);
+  const sign_headers = {
+    ...genSign("POST", prefix + url, query_param, body),
+    ...headers,
+  };
+
+  const options = {
+    method: "POST",
+    headers: sign_headers,
+    body: body,
+  };
+
+  try {
+    const res = await fetch(host + prefix + url, options);
+    const json = await res.json();
+    console.log(json);
+    return json;
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+const alphabeticalTickers = (a: Ticker, b: Ticker) => {
+  if (a.currencyPair < b.currencyPair) {
+    return -1;
+  }
+  if (a.currencyPair > b.currencyPair) {
+    return 1;
+  }
+  return 0;
 };
 
 export default async function GateMethods({ data }: any) {
