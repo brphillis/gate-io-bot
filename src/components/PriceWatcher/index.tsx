@@ -1,112 +1,31 @@
 "use client";
-import { CreateOrder, GetOrders, GetPrices } from "@/app/GateMethods/page";
-import {
-  addPercentage,
-  getPercentageChange,
-  subtractPercentage,
-} from "@/utility/NumberHelpers";
-import { useCallback, useEffect, useState } from "react";
-import { returnMatchingOrders } from "@/utility/OrderHelpers";
+import { GetOrders, GetPrices } from "@/app/GateMethods/page";
+import { getPercentageChange } from "@/utility/NumberHelpers";
+import { useEffect, useState } from "react";
+
+import { buyDips } from "@/app/BuyDips/page";
+import { handlePendingOrders } from "@/app/HandlePendingOrders/page";
 type Props = {};
 
 const PriceWatcher = (props: Props) => {
-  const [storedPrices, setStoredPrices] = useState<Ticker[]>();
-  const [purchasedTokens, setPurchasedTokens] = useState<PurchasedToken[]>([]);
-  const [count, setCount] = useState<number>(0);
-  const [interval, setInterval] = useState<typeof setTimeout>();
-  // let interval: ReturnType<typeof setTimeout>;
-  const buyInUSDT = 1.5;
+  const amountPerTrade = 10; //dollar value ( eg: 1.5 )
+  const dipToBuy = -5; // % dip to buy ( eg: -5 )
+  const profitToSell = 4; // % profit to sell ( eg: 5 )
+  const interval = 5000; // ms between price checks
 
-  useEffect(() => {
-    console.log("PURCHASED TOKENS", purchasedTokens);
-  }, [purchasedTokens]);
+  let storedPrices: Ticker[];
 
-  useEffect(() => {
-    console.log("PURCHASED TOKENS", purchasedTokens);
-  }, [purchasedTokens]);
-
-  const handlePendingOrders = async () => {
-    console.log("handling pending orders");
-    const orders = await GetOrders("finished");
-
-    if (orders.length > 0) {
-      const matchingOrders = returnMatchingOrders(purchasedTokens, orders);
-
-      if (matchingOrders) {
-        try {
-          // for each matching order create limit sell for token
-          for (var i = 0; i < matchingOrders.length; i++) {
-            console.log("MATCHING ORDERS", matchingOrders);
-            var calcNetworkFee = subtractPercentage(
-              matchingOrders[i].amount,
-              0.05
-            );
-            const orderData: Order = {
-              currency_pair: matchingOrders[i].currency_pair,
-              type: "limit",
-              price: addPercentage(matchingOrders[i].price, 5),
-              account: "spot",
-              side: "sell",
-              amount: (calcNetworkFee - matchingOrders[i].fee).toString(),
-              time_in_force: "gtc",
-            };
-            console.log("data of sell object", orderData);
-            const res = await CreateOrder(orderData);
-            if (res.id) {
-              //SUCCESS SELL ORDER and remove token from array
-              console.log("successful sell order", res);
-              setPurchasedTokens(
-                purchasedTokens.filter((e) => e.id !== matchingOrders[i].id)
-              );
-            } else {
-              //FAILED SELL ORDER
-              console.log("failed sell order", res);
-            }
-          }
-        } catch (err) {
-          //API ERROR
-          console.log(err);
-        }
-      }
-    }
-
-    //check to see if limit buy is aged, if so cancel the order
-    // for (var i = 0; i < purchasedTokens.length; i++) {
-    //   if (purchasedTokens[i].create_time_ms > 999999999) {
-    //     //if aged, post cancel
-    //   }
-    // }
+  const [intervalId, setIntervalId] = useState<NodeJS.Timer | undefined>();
+  const startInterval = () => {
+    const id = setInterval(() => {
+      findDippedPrices("buy");
+    }, interval);
+    setIntervalId(id);
   };
 
-  const buyDips = async (results: CurrencyOfInterest[]) => {
-    console.log("buying dipped prices");
-    let boughtDips: PurchasedToken[] = [];
-    try {
-      for (var i = 0; i < results.length; i++) {
-        const orderData: Order = {
-          currency_pair: results[i].currencyPair,
-          type: "limit",
-          price: results[i].last,
-          account: "spot",
-          side: "buy",
-          amount: (buyInUSDT / parseFloat(results[i].last)).toString(),
-          time_in_force: "fok",
-        };
-        const res = await CreateOrder(orderData);
-        console.log(res);
-        if (res.id) {
-          boughtDips.push(res);
-        } else {
-        }
-      }
-      if (boughtDips.length > 0) {
-        console.log("boughtDips.length > 0");
-        setPurchasedTokens([...boughtDips, ...purchasedTokens]);
-        handlePendingOrders();
-      }
-    } catch (err) {
-      console.log(err);
-    }
+  const stopInterval = () => {
+    clearInterval(intervalId);
+    setIntervalId(undefined);
   };
 
   const findDippedPrices = async (mode: "buy" | "find") => {
@@ -114,7 +33,8 @@ const PriceWatcher = (props: Props) => {
       try {
         const res: Ticker[] = await GetPrices();
         if (!storedPrices) {
-          setStoredPrices(res);
+          // setStoredPrices(res);
+          storedPrices = res;
           console.log("initial prices", storedPrices);
         }
         return res;
@@ -138,16 +58,33 @@ const PriceWatcher = (props: Props) => {
         const newPrice = parseFloat(last);
         const oldPrice = parseFloat(storedPrices[i].last);
         const dipAmount = getPercentageChange(newPrice, oldPrice);
-        if (dipAmount < -5 && isUSDTPair && oldMatchesNew && notNewListing) {
+        if (
+          dipAmount < dipToBuy &&
+          isUSDTPair &&
+          oldMatchesNew &&
+          notNewListing
+        ) {
           results.push({ currencyPair, last, change: dipAmount });
         }
       });
 
-      setStoredPrices(newPrices);
+      // setStoredPrices(newPrices);
+      storedPrices = newPrices;
       if (results.length > 0) {
         console.log(`${results.length} DIPS`, results);
         if (mode === "buy") {
-          buyDips(results);
+          const boughtDips = await buyDips(amountPerTrade, results);
+          if (boughtDips) {
+            const successfulPurchases = await handlePendingOrders(
+              boughtDips,
+              profitToSell
+            );
+            if (successfulPurchases) {
+              console.log("sell orders successful-", successfulPurchases);
+            }
+          } else {
+            console.log("failed to buy dips");
+          }
         }
       } else {
         console.log("no dips");
@@ -180,6 +117,19 @@ const PriceWatcher = (props: Props) => {
         onClick={() => GetOrders("finished")}
       >
         Get Orders
+      </button>
+      <button
+        className="p-2 border border-white"
+        onClick={() => startInterval()}
+      >
+        Start Price Watcher
+      </button>
+      <button
+        className="p-2 border border-white"
+        onClick={() => stopInterval()}
+        disabled={!intervalId}
+      >
+        Stop Price Watcher
       </button>
       {/* <PurchasedTokenHandler
         purchasedTokens={purchasedTokens}

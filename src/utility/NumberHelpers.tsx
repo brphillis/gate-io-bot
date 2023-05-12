@@ -23,11 +23,15 @@ export const subtractPercentage = (
   numString: string,
   percentage: number
 ): number => {
-  const num = BigInt(numString.replace(".", ""));
-  const decimalCount = numString.split(".")[1].length;
+  let numstring: string = numString;
+  if (!numString.includes(".")) {
+    numstring = numString + ".0";
+  }
+  const num = BigInt(numstring.replace(".", ""));
+  const decimalCount = numstring.split(".")[1].length;
   const percentageFraction = BigInt(Math.round(percentage * 100000));
   const result = num - (num * percentageFraction) / BigInt(10000000);
-  const resultStr = result.toString().padStart(numString.length - 1, "0");
+  const resultStr = result.toString().padStart(numstring.length - 1, "0");
 
   return Number(
     `${resultStr.slice(0, -decimalCount)}.${resultStr.slice(-decimalCount)}`
