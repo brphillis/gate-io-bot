@@ -1,12 +1,8 @@
 "use server";
 
 import { createHash, createHmac } from "crypto";
-import { Order } from "gate-api";
-import { ApiKeyAuth } from "gate-api";
 import { SpotApi } from "gate-api";
 import { ApiClient } from "gate-api";
-import { request } from "https";
-// import { ApiKeyAuth } from "gate-api";
 
 const client = new ApiClient().setApiKeySecret(
   process.env.NEXT_PUBLIC_GATEIO_NORMAL!,
@@ -14,12 +10,18 @@ const client = new ApiClient().setApiKeySecret(
 );
 
 const spotApi = new SpotApi(client);
+const host = "https://api.gateio.ws";
+const prefix = "/api/v4";
+const base_headers = {
+  Accept: "application/json",
+  "Content-Type": "application/json",
+};
 
 const genSign = (
   method: string,
   url: string,
   query_string: string,
-  payload_string: string
+  payload_string?: string
 ) => {
   const key = process.env.NEXT_PUBLIC_GATEIO_NORMAL!;
   const secret = process.env.NEXT_PUBLIC_GATEIO_SECRET!;
@@ -63,19 +65,12 @@ export const GetPrices = async () => {
 };
 
 export const CreateOrder = async (order: Order) => {
-  const host = "https://api.gateio.ws";
-  const prefix = "/api/v4";
-  const headers = {
-    Accept: "application/json",
-    "Content-Type": "application/json",
-  };
-
   const url = "/spot/orders";
   const query_param = "";
   const body = JSON.stringify(order);
   const sign_headers = {
     ...genSign("POST", prefix + url, query_param, body),
-    ...headers,
+    ...base_headers,
   };
 
   const options = {
@@ -87,10 +82,31 @@ export const CreateOrder = async (order: Order) => {
   try {
     const res = await fetch(host + prefix + url, options);
     const json = await res.json();
-    console.log(json);
     return json;
   } catch (err) {
     console.error(err);
+  }
+};
+
+export const GetOrders = async (status: "open" | "finished") => {
+  const url = "/spot/orders";
+  const query_param = `status=${status}`;
+  const sign_headers = {
+    ...genSign("GET", prefix + url, query_param),
+    ...base_headers,
+  };
+
+  const options = {
+    method: "GET",
+    headers: sign_headers,
+  };
+
+  try {
+    const res = await fetch(host + prefix + url + "?" + query_param, options);
+    const json = await res.json();
+    return json;
+  } catch (err) {
+    console.error("ERROR", err);
   }
 };
 

@@ -72,7 +72,7 @@ type Order = {
   finishAs?: string;
 };
 
-type PlacedOrder = {
+type PurchasedToken = {
   account: string;
   amend_text: string;
   amount: string;
