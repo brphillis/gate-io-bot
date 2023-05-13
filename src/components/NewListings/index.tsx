@@ -1,6 +1,6 @@
 "use client";
 
-import { GetCurrencies } from "@/app/GateMethods/page";
+import { GetCurrencies } from "@/app/api/page";
 import { useEffect, useState } from "react";
 import { filterArrayDifference } from "@/utility/ArrayHelpers";
 

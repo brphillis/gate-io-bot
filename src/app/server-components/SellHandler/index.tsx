@@ -1,12 +1,12 @@
 import { returnMatchingOrders } from "@/utility/OrderHelpers";
-import { CreateOrder, GetOrders } from "../GateMethods/page";
+import { CreateOrder, GetOrders } from "../../api/page";
 import { addPercentage, subtractPercentage } from "@/utility/NumberHelpers";
 
-export const handlePendingOrders = async (
+export const SellHandler = async (
   purchasedTokens: PurchasedToken[],
   profitToSell: number
 ) => {
-  console.log("handling pending orders");
+  console.log("placing sell orders");
   const orders = await GetOrders("finished");
 
   if (orders.length > 0) {
@@ -32,11 +32,10 @@ export const handlePendingOrders = async (
             amount: (calcNetworkFee - matchingOrders[i].fee).toString(),
             time_in_force: "gtc",
           };
-          console.log("data of sell object", orderData);
+          console.log("initiated sell order", orderData);
           const res = await CreateOrder(orderData);
           if (res.id) {
             //SUCCESS SELL ORDER and remove token from array
-            console.log("successful sell order", res);
             successfulPurchases.push(matchingOrders[i]);
           } else {
             //FAILED SELL ORDER

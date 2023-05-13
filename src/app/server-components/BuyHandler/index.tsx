@@ -1,6 +1,6 @@
-import { CreateOrder } from "../GateMethods/page";
+import { CreateOrder } from "../../api/page";
 
-export const buyDips = async (
+export const BuyHandler = async (
   amountInUSDT: number,
   dipsToBuy: CurrencyOfInterest[]
 ) => {
@@ -25,7 +25,6 @@ export const buyDips = async (
       }
     }
     if (boughtDips.length > 0) {
-      console.log("boughtDips.length > 0");
       return boughtDips;
     } else {
       return false;
