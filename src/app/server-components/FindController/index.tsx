@@ -15,7 +15,10 @@ export const FindController = async (
       const res: Ticker[] = await GetPrices();
       if (!storedPrices) {
         storedPrices = res;
-        console.log("initial prices", storedPrices);
+        console.log("bot started, initial prices - ", storedPrices);
+        console.log(`spending $${amountPerTrade} per trade`);
+        console.log(`buying the dips at ${dipToBuy}%`);
+        console.log(`selling at a profit of ${profitToSell}%`);
       }
       return res;
     } catch (err) {
@@ -25,25 +28,33 @@ export const FindController = async (
   const newPrices = await fetchPrices();
   let results: CurrencyOfInterest[] = [];
   if (storedPrices && newPrices) {
-    newPrices.forEach(({ currencyPair, changeUtc0, last }, i) => {
-      const storedName = storedPrices[i].currencyPair;
-      const newName = currencyPair;
-      const oldMatchesNew = storedName === newName;
-      const isUSDTPair = newName.includes("_USDT");
-      const notNewListing = changeUtc0 !== storedPrices[i].changeUtc8;
+    newPrices.forEach(
+      ({ currencyPair, last, changePercentage, quoteVolume }, i) => {
+        const storedName = storedPrices[i].currencyPair;
+        const newName = currencyPair;
+        const oldMatchesNew = storedName === newName;
+        const isUSDTPair = newName.includes("_USDT");
+        const isLongToken = newName.split("_")[0].slice(-2).includes("3L");
+        const isShortToken = newName.split("_")[0].slice(-2).includes("3S");
+        const dailyChangeUnder = parseFloat(changePercentage) < 100;
+        const baseVolumeOver = parseFloat(quoteVolume) > 60000;
 
-      const newPrice = parseFloat(last);
-      const oldPrice = parseFloat(storedPrices[i].last);
-      const dipAmount = getPercentageChange(newPrice, oldPrice);
-      if (
-        dipAmount < dipToBuy &&
-        isUSDTPair &&
-        oldMatchesNew &&
-        notNewListing
-      ) {
-        results.push({ currencyPair, last, change: dipAmount });
+        const newPrice = parseFloat(last);
+        const oldPrice = parseFloat(storedPrices[i].last);
+        const dipAmount = getPercentageChange(newPrice, oldPrice);
+        if (
+          dipAmount < dipToBuy &&
+          isUSDTPair &&
+          oldMatchesNew &&
+          !isShortToken &&
+          !isLongToken &&
+          dailyChangeUnder &&
+          baseVolumeOver
+        ) {
+          results.push({ currencyPair, last, change: dipAmount });
+        }
       }
-    });
+    );
 
     storedPrices = newPrices;
     if (results.length > 0) {

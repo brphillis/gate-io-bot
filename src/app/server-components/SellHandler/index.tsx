@@ -26,7 +26,10 @@ export const SellHandler = async (
           const orderData: Order = {
             currency_pair: matchingOrders[i].currency_pair,
             type: "limit",
-            price: addPercentage(matchingOrders[i].price, profitToSell),
+            price: addPercentage(
+              matchingOrders[i].price,
+              profitToSell
+            ).toString(),
             account: "spot",
             side: "sell",
             amount: (calcNetworkFee - matchingOrders[i].fee).toString(),

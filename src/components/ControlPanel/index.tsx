@@ -5,10 +5,10 @@ import { FindController } from "@/app/server-components/FindController";
 type Props = {};
 
 const ControlPanel = (props: Props) => {
-  const amountPerTrade = 20; //dollar value ( eg: 1.5 )
-  const dipToBuy = -3; // % dip to buy ( eg: -5 )
-  const profitToSell = 3; // % profit to sell ( eg: 5 )
-  const interval = 4500; // ms between price checks
+  const amountPerTrade = 25; //dollar value ( eg: 1.5 )
+  const dipToBuy = -6; // % dip to buy ( eg: -5 )
+  const profitToSell = 4; // % profit to sell ( eg: 5 )
+  const interval = 4000; // ms between price checks
   let storedPrices: Ticker[];
 
   const [intervalId, setIntervalId] = useState<NodeJS.Timer | undefined>();
