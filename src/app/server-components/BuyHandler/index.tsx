@@ -12,13 +12,14 @@ export const BuyHandler = async (
       const orderData: Order = {
         currency_pair: dipsToBuy[i].currencyPair,
         type: "limit",
-        price: addPercentage(dipsToBuy[i].last, 0.1).toString(), // frontrun protection
+        price: dipsToBuy[i].last,
         account: "spot",
         side: "buy",
         amount: (amountInUSDT / parseFloat(dipsToBuy[i].last)).toString(),
         time_in_force: "fok",
       };
       const res = await CreateOrder(orderData);
+      console.log("RES", res);
       if (res.id) {
         boughtDips.push(res);
       } else {

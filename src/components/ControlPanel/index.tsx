@@ -1,20 +1,22 @@
 "use client";
 import { GetOrders } from "@/app/api/page";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FindController } from "@/app/server-components/FindController";
 type Props = {};
 
 const ControlPanel = (props: Props) => {
-  const amountPerTrade = 25; //dollar value ( eg: 1.5 )
-  const dipToBuy = -6; // % dip to buy ( eg: -5 )
-  const profitToSell = 4; // % profit to sell ( eg: 5 )
-  const interval = 4000; // ms between price checks
-  let storedPrices: Ticker[];
+  const amountPerTrade = 30; //dollar value ( eg: 1.5 )
+  const dipToBuy = -4; // % dip to buy ( eg: -5 )
+  const profitToSell = 3; // % profit to sell ( eg: 5 )
+  const interval = 4500; // ms between price checks
 
-  const [intervalId, setIntervalId] = useState<NodeJS.Timer | undefined>();
+  const [storedPrices, setStoredPrices] = useState<Ticker[] | undefined>();
+  const [running, setRunning] = useState<boolean>(false);
 
-  const startInterval = async () => {
-    const id = setInterval(async () => {
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout | undefined;
+
+    const updatePrices = async () => {
       const newPrices = await FindController(
         "buy",
         dipToBuy,
@@ -22,15 +24,24 @@ const ControlPanel = (props: Props) => {
         amountPerTrade,
         storedPrices
       );
-      storedPrices = newPrices as Ticker[];
-    }, interval);
-    setIntervalId(id);
-  };
+      setStoredPrices(newPrices as Ticker[]);
+      timeoutId = setTimeout(updatePrices, interval);
+    };
 
-  const stopInterval = () => {
-    clearInterval(intervalId);
-    setIntervalId(undefined);
-  };
+    if (running) {
+      timeoutId = setTimeout(updatePrices, interval);
+    }
+
+    if (!running && timeoutId) {
+      clearTimeout(timeoutId);
+    }
+
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [running, dipToBuy, interval, storedPrices]);
 
   return (
     <div className="flex flex-row gap-6">
@@ -52,14 +63,13 @@ const ControlPanel = (props: Props) => {
       </button>
       <button
         className="p-2 border border-white"
-        onClick={() => startInterval()}
+        onClick={() => setRunning(true)}
       >
         Start Price Watcher
       </button>
       <button
         className="p-2 border border-white"
-        onClick={() => stopInterval()}
-        disabled={!intervalId}
+        onClick={() => setRunning(false)}
       >
         Stop Price Watcher
       </button>
