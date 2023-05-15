@@ -1,3 +1,5 @@
+"use server";
+
 export const getPercentageChange = (
   newNumber: number,
   oldNumber: number

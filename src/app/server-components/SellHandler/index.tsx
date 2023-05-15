@@ -1,12 +1,9 @@
 "use server";
 
-import { returnMatchingOrders } from "@/utility/OrderHelpers";
+import { returnMatchingOrders } from "@/app/utility/OrderHelpers";
 import { CreateOrder, GetOrders } from "../../api/page";
-import {
-  addPercentage,
-  subtractPercentage,
-  toFixed,
-} from "@/app/utility/NumberHelpers";
+import { addPercentage, toFixed } from "@/app/utility/NumberHelpers";
+import { makeid } from "@/app/utility/StringHelpers";
 
 export const SellHandler = async (
   purchasedTokens: PurchasedToken[],
@@ -14,18 +11,19 @@ export const SellHandler = async (
 ) => {
   console.log("placing sell orders");
   const orders = await GetOrders("finished");
-  console.log("ALL RETURNED ORDERS", orders);
 
   if (orders.length > 0) {
+    console.log("length of orders looping through", orders.length);
     const matchingOrders = returnMatchingOrders(purchasedTokens, orders);
-    console.log("MATCHING", matchingOrders);
     let successfulPurchases = [];
 
     if (matchingOrders.length > 0) {
       try {
         // for each matching order create limit sell for token
+        const batchOrder: Order[] = [];
         for (var i = 0; i < matchingOrders.length; i++) {
           const orderData: Order = {
+            text: `t-${makeid(6)}`,
             currency_pair: matchingOrders[i].currency_pair,
             type: "limit",
             price: addPercentage(
@@ -35,22 +33,15 @@ export const SellHandler = async (
             account: "spot",
             side: "sell",
             amount: toFixed(
-              toFixed(subtractPercentage(matchingOrders[i].amount, 0.5)) -
-                toFixed(matchingOrders[i].fee)
+              toFixed(matchingOrders[i].amount) - toFixed(matchingOrders[i].fee)
             ), //network fee
             time_in_force: "gtc",
           };
-          console.log("initiated sell order", orderData);
-          const res = await CreateOrder(orderData);
-          if (res.id) {
-            //SUCCESS SELL ORDER and remove token from array
-            successfulPurchases.push(matchingOrders[i]);
-          } else {
-            //FAILED SELL ORDER
-            console.log("failed sell order", res);
-          }
+          batchOrder.push(orderData);
         }
-        return successfulPurchases;
+        console.log("initiated sell order", batchOrder);
+        const res = await CreateOrder(batchOrder);
+        return res;
       } catch (err) {
         //API ERROR
         console.log(err);
@@ -60,11 +51,4 @@ export const SellHandler = async (
       return [];
     }
   }
-
-  //check to see if limit buy is aged, if so cancel the order
-  // for (var i = 0; i < purchasedTokens.length; i++) {
-  //   if (purchasedTokens[i].create_time_ms > 999999999) {
-  //     //if aged, post cancel
-  //   }
-  // }
 };

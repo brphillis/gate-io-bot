@@ -2,31 +2,29 @@
 import { GetOrders } from "@/app/api/page";
 import { useEffect, useState } from "react";
 import { FindController } from "@/app/server-components/FindController";
-type Props = {};
 
-const ControlPanel = (props: Props) => {
+const ControlPanel = () => {
   const [count, setCount] = useState<number>(0);
+  const [storedPrices, setStoredPrices] = useState<Ticker[] | undefined>();
+  const [big_storedPrices, setBig_StoredPrices] = useState<
+    Ticker[] | undefined
+  >();
+  const [running, setRunning] = useState<boolean>(false);
+  const [pending, setPending] = useState<boolean>(false);
+  const [big_pending, setBig_Pending] = useState<boolean>(false);
 
   //small interval settings
-  const amountPerTrade = 20; //dollar value ( eg: 1.5 )
+  const amountPerTrade = 8; //dollar value ( eg: 1.5 )
   const dipToBuy = -5; // % dip to buy ( eg: -5 )
   const profitToSell = 4; // % profit to sell ( eg: 5 )
   const interval = 5000; // ms between price checks
 
-  const [storedPrices, setStoredPrices] = useState<Ticker[] | undefined>();
-  const [running, setRunning] = useState<boolean>(false);
-  const [pending, setPending] = useState<boolean>(false);
-
   //large interval settings
-  const big_dipToBuy = -6; // % dip to buy ( eg: -5 )
+  const big_dipToBuy = -5; // % dip to buy ( eg: -5 )
   const big_profitToSell = 4; // % profit to sell ( eg: 5 )
-  const big_interval = 4; // check for big dips every X intervals ( eg: 4 )
+  const big_interval = 4; // check for big dips every X small intervals ( eg: 4 )
 
-  const [big_storedPrices, setBig_StoredPrices] = useState<
-    Ticker[] | undefined
-  >();
-  const [big_pending, setBig_Pending] = useState<boolean>(false);
-
+  //loop for checking dips
   useEffect(() => {
     let timeoutId: NodeJS.Timeout | undefined;
 
@@ -36,7 +34,7 @@ const ControlPanel = (props: Props) => {
         "buy",
         dipToBuy,
         profitToSell,
-        amountPerTrade / 2,
+        amountPerTrade,
         storedPrices
       );
       setStoredPrices(newPrices as Ticker[]);
@@ -64,7 +62,7 @@ const ControlPanel = (props: Props) => {
     };
   }, [running, dipToBuy, interval, storedPrices, count, pending]);
 
-  //loop for big interval, larger dips
+  //loop for checking larger dips at larger intervals
   useEffect(() => {
     const updateBigPrices = async () => {
       const bigInterval = true;
@@ -88,16 +86,6 @@ const ControlPanel = (props: Props) => {
 
   return (
     <div className="flex flex-row gap-6">
-      {/* <button className="p-2 border border-white" onClick={() => fetchPrices()}>
-        Get Prices
-      </button> */}
-      {/* <button
-        className="p-2 border border-white"
-        onClick={() => findDippedPrices("find")}
-      >
-        Find Dips
-      </button> */}
-
       <button
         className="p-2 border border-white"
         onClick={() => GetOrders("finished")}
@@ -116,10 +104,6 @@ const ControlPanel = (props: Props) => {
       >
         Stop Price Watcher
       </button>
-      {/* <PurchasedTokenHandler
-        purchasedTokens={purchasedTokens}
-        setPurchasedTokens={setPurchasedTokens}
-      /> */}
     </div>
   );
 };

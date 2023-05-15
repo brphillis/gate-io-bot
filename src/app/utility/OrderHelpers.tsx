@@ -1,3 +1,5 @@
+"use server";
+
 export const returnMatchingOrders = (arr1: any, arr2: any) => {
   const matchingObjs = [];
 

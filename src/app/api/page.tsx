@@ -63,8 +63,8 @@ export const GetPrices = async () => {
   return JSON.parse(JSON.stringify(results));
 };
 
-export const CreateOrder = async (order: Order) => {
-  const url = "/spot/orders";
+export const CreateOrder = async (order: Order[]) => {
+  const url = "/spot/batch_orders";
   const query_param = "";
   const body = JSON.stringify(order);
   const sign_headers = {

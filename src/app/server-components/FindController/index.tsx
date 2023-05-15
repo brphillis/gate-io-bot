@@ -63,13 +63,15 @@ export const FindController = async (
       console.log(`${results.length} DIPS`, results);
       if (mode === "buy") {
         const boughtDips = await BuyHandler(amountPerTrade, results);
-        if (boughtDips) {
+        if (boughtDips[0].id) {
           const successfulPurchases = await SellHandler(
             boughtDips,
             profitToSell
           );
-          if (successfulPurchases) {
+          if (successfulPurchases[0].id) {
             console.log("sell orders successful-", successfulPurchases);
+          } else {
+            console.log("sell orders failed-", successfulPurchases);
           }
         } else {
           console.log("failed to buy dips");
