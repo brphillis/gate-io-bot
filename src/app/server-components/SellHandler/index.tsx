@@ -1,6 +1,12 @@
+"use server";
+
 import { returnMatchingOrders } from "@/utility/OrderHelpers";
 import { CreateOrder, GetOrders } from "../../api/page";
-import { addPercentage, subtractPercentage } from "@/utility/NumberHelpers";
+import {
+  addPercentage,
+  subtractPercentage,
+  toFixed,
+} from "@/app/utility/NumberHelpers";
 
 export const SellHandler = async (
   purchasedTokens: PurchasedToken[],
@@ -8,6 +14,7 @@ export const SellHandler = async (
 ) => {
   console.log("placing sell orders");
   const orders = await GetOrders("finished");
+  console.log("ALL RETURNED ORDERS", orders);
 
   if (orders.length > 0) {
     const matchingOrders = returnMatchingOrders(purchasedTokens, orders);
@@ -18,11 +25,6 @@ export const SellHandler = async (
       try {
         // for each matching order create limit sell for token
         for (var i = 0; i < matchingOrders.length; i++) {
-          var calcNetworkFee = subtractPercentage(
-            matchingOrders[i].amount,
-            0.05
-          );
-
           const orderData: Order = {
             currency_pair: matchingOrders[i].currency_pair,
             type: "limit",
@@ -32,7 +34,10 @@ export const SellHandler = async (
             ).toString(),
             account: "spot",
             side: "sell",
-            amount: (calcNetworkFee - matchingOrders[i].fee).toString(),
+            amount: toFixed(
+              toFixed(subtractPercentage(matchingOrders[i].amount, 0.5)) -
+                toFixed(matchingOrders[i].fee)
+            ), //network fee
             time_in_force: "gtc",
           };
           console.log("initiated sell order", orderData);

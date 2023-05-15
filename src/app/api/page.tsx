@@ -49,7 +49,6 @@ export const GetCurrencies = async () => {
 
 export const GetPrices = async () => {
   const opts = {
-    // currencyPair: "USDT",
     timezone: "utc0",
   };
   let results;
@@ -90,7 +89,7 @@ export const CreateOrder = async (order: Order) => {
 
 export const GetOrders = async (status: "open" | "finished") => {
   const url = "/spot/orders";
-  const query_param = `status=${status}`;
+  const query_param = `status=${status}&side=buy`;
   const sign_headers = {
     ...genSign("GET", prefix + url, query_param),
     ...base_headers,

@@ -1,4 +1,6 @@
-import { getPercentageChange } from "@/utility/NumberHelpers";
+"use server";
+
+import { getPercentageChange } from "@/app/utility/NumberHelpers";
 import { GetPrices } from "../../api/page";
 import { BuyHandler } from "../BuyHandler";
 import { SellHandler } from "../SellHandler";
@@ -8,7 +10,8 @@ export const FindController = async (
   dipToBuy: number,
   profitToSell: number,
   amountPerTrade: number,
-  storedPrices: Ticker[] | undefined
+  storedPrices: Ticker[] | undefined,
+  bigInterval?: boolean
 ) => {
   const fetchPrices = async () => {
     try {
@@ -26,6 +29,7 @@ export const FindController = async (
     }
   };
   const newPrices = await fetchPrices();
+
   let results: CurrencyOfInterest[] = [];
   if (storedPrices && newPrices) {
     newPrices.forEach(
@@ -36,8 +40,8 @@ export const FindController = async (
         const isUSDTPair = newName.includes("_USDT");
         const isLongToken = newName.split("_")[0].slice(-2).includes("3L");
         const isShortToken = newName.split("_")[0].slice(-2).includes("3S");
-        const dailyChangeUnder = parseFloat(changePercentage) < 100;
-        const baseVolumeOver = parseFloat(quoteVolume) > 40000;
+        const dailyChangeUnder = parseFloat(changePercentage) < 130;
+        const baseVolumeOver = parseFloat(quoteVolume) > 50000;
         const newPrice = parseFloat(last);
         const oldPrice = parseFloat(storedPrices![i].last);
         const dipAmount = getPercentageChange(newPrice, oldPrice);
@@ -72,7 +76,12 @@ export const FindController = async (
         }
       }
     } else {
-      console.log("no dips");
+      if (!bigInterval) {
+        console.log("no dips");
+      }
+      if (bigInterval) {
+        console.log("no big dips");
+      }
     }
   } else {
     console.log("could not find prices to store");
