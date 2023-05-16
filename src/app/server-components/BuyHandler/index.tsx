@@ -8,8 +8,7 @@ export const BuyHandler = async (
   amountInUSDT: number,
   dipsToBuy: CurrencyOfInterest[]
 ) => {
-  console.log("buying dipped prices");
-  let boughtDips: PurchasedToken[] = [];
+  console.log("attempting to snipe low price..");
   let batchOrder: Order[] = [];
   try {
     for (var i = 0; i < dipsToBuy.length; i++) {
@@ -25,10 +24,16 @@ export const BuyHandler = async (
       };
       batchOrder.push(orderData);
     }
-    const resOne = await CreateOrder(batchOrder);
+    const res = await CreateOrder(batchOrder);
 
-    return resOne;
+    const succOrders = res.filter((e: any) => e.id);
+    if (succOrders.length > 0) {
+      return succOrders;
+    } else {
+      return res;
+    }
   } catch (err) {
-    return false;
+    //if api returns error
+    return [err];
   }
 };

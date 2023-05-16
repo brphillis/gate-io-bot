@@ -1,6 +1,6 @@
 "use server";
 
-import { getPercentageChange } from "@/app/utility/NumberHelpers";
+import { getPercentageChange, toFixed } from "@/app/utility/NumberHelpers";
 import { GetPrices } from "../../api/page";
 import { BuyHandler } from "../BuyHandler";
 import { SellHandler } from "../SellHandler";
@@ -45,13 +45,14 @@ export const FindController = async (
         const newPrice = parseFloat(last);
         const oldPrice = parseFloat(storedPrices![i].last);
         const dipAmount = getPercentageChange(newPrice, oldPrice);
+
         if (
           dipAmount < dipToBuy &&
           isUSDTPair &&
           oldMatchesNew &&
           !isShortToken &&
           !isLongToken &&
-          dailyChangeUnder &&
+          // dailyChangeUnder &&
           baseVolumeOver
         ) {
           results.push({ currencyPair, last, change: dipAmount });
@@ -62,19 +63,36 @@ export const FindController = async (
     if (results.length > 0) {
       console.log(`${results.length} DIPS`, results);
       if (mode === "buy") {
-        const boughtDips = await BuyHandler(amountPerTrade, results);
-        if (boughtDips[0].id) {
+        let attempts = 0;
+        let boughtDips;
+
+        while (attempts < 30) {
+          boughtDips = await BuyHandler(amountPerTrade, results);
+
+          if (boughtDips[0]?.id) {
+            break;
+          }
+
+          attempts++;
+        }
+
+        if (boughtDips[0]?.id) {
           const successfulPurchases = await SellHandler(
             boughtDips,
             profitToSell
           );
-          if (successfulPurchases[0].id) {
-            console.log("sell orders successful-", successfulPurchases);
+
+          if (successfulPurchases[0]?.id) {
+            console.log("result of sell order - ", successfulPurchases);
           } else {
-            console.log("sell orders failed-", successfulPurchases);
+            successfulPurchases.forEach((error: any) => {
+              console.log("failed to buy order - ", error.message);
+            });
           }
         } else {
-          console.log("failed to buy dips");
+          boughtDips.forEach((error: any) => {
+            console.log("failed to buy order - ", error.message);
+          });
         }
       }
     } else {
