@@ -1,6 +1,6 @@
 "use server";
 
-import { getPercentageChange, toFixed } from "@/app/utility/NumberHelpers";
+import { getPercentageChange } from "@/app/utility/NumberHelpers";
 import { GetPrices } from "../../api/page";
 import { BuyHandler } from "../BuyHandler";
 import { SellHandler } from "../SellHandler";
@@ -38,10 +38,15 @@ export const FindController = async (
         const newName = currencyPair;
         const oldMatchesNew = storedName === newName;
         const isUSDTPair = newName.includes("_USDT");
-        const isLongToken = newName.split("_")[0].slice(-2).includes("3L");
-        const isShortToken = newName.split("_")[0].slice(-2).includes("3S");
-        const dailyChangeUnder = parseFloat(changePercentage) < 130;
-        const baseVolumeOver = parseFloat(quoteVolume) > 50000;
+        const isThreeLongToken = newName.split("_")[0].slice(-2).includes("3L");
+        const isThreeShortToken = newName
+          .split("_")[0]
+          .slice(-2)
+          .includes("3S");
+        const isFiveLongToken = newName.split("_")[0].slice(-2).includes("3L");
+        const isFiveShortToken = newName.split("_")[0].slice(-2).includes("3S");
+        const dailyChangeUnder = parseFloat(changePercentage) < 110;
+        const baseVolumeOver = parseFloat(quoteVolume) > 80000;
         const newPrice = parseFloat(last);
         const oldPrice = parseFloat(storedPrices![i].last);
         const dipAmount = getPercentageChange(newPrice, oldPrice);
@@ -50,9 +55,11 @@ export const FindController = async (
           dipAmount < dipToBuy &&
           isUSDTPair &&
           oldMatchesNew &&
-          !isShortToken &&
-          !isLongToken &&
-          // dailyChangeUnder &&
+          !isThreeShortToken &&
+          !isThreeLongToken &&
+          !isFiveShortToken &&
+          !isFiveLongToken &&
+          dailyChangeUnder &&
           baseVolumeOver
         ) {
           results.push({ currencyPair, last, change: dipAmount });
@@ -66,32 +73,44 @@ export const FindController = async (
         let attempts = 0;
         let boughtDips;
 
-        while (attempts < 30) {
+        while (attempts < 4) {
           boughtDips = await BuyHandler(amountPerTrade, results);
 
-          if (boughtDips[0]?.id) {
+          if (boughtDips.some((obj: any) => obj.status !== "cancelled")) {
             break;
           }
 
           attempts++;
         }
 
-        if (boughtDips[0]?.id) {
+        if (boughtDips.some((obj: any) => obj.status !== "cancelled")) {
+          boughtDips.forEach(({ currency_pair }: PurchasedToken) => {
+            console.log(`purchased ${currency_pair}`);
+          });
           const successfulPurchases = await SellHandler(
             boughtDips,
             profitToSell
           );
 
-          if (successfulPurchases[0]?.id) {
+          if (successfulPurchases.some((obj: any) => obj.succeeded === true)) {
             console.log("result of sell order - ", successfulPurchases);
+            successfulPurchases.forEach(({ currency_pair }: PurchasedToken) => {
+              console.log(`placed sell order for ${currency_pair}`);
+            });
           } else {
             successfulPurchases.forEach((error: any) => {
-              console.log("failed to buy order - ", error.message);
+              console.log("failed to sell order - ", error.message);
             });
           }
+        }
+        if (boughtDips.every((obj: any) => obj.status === "cancelled")) {
+          console.log("orders could not be filled");
         } else {
           boughtDips.forEach((error: any) => {
-            console.log("failed to buy order - ", error.message);
+            console.log(
+              "immediate or cancel order has cancelled",
+              error.message
+            );
           });
         }
       }

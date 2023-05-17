@@ -14,15 +14,15 @@ const ControlPanel = () => {
   const [big_pending, setBig_Pending] = useState<boolean>(false);
 
   //small interval settings
-  const amountPerTrade = 5; //dollar value ( eg: 1.5 )
-  const dipToBuy = -3; // % dip to buy ( eg: -5 )
-  const profitToSell = 3; // % profit to sell ( eg: 5 )
-  const interval = 4500; // ms between price checks
+  const amountPerTrade = 6; //dollar value ( eg: 1.5 )
+  const dipToBuy = -2; // % dip to buy ( eg: -5 )
+  const profitToSell = 2; // % profit to sell ( eg: 5 )
+  const interval = 1000; // ms between price checks
 
   //large interval settings
   const big_dipToBuy = -8; // % dip to buy ( eg: -5 )
-  const big_profitToSell = 4; // % profit to sell ( eg: 5 )
-  const big_interval = 5; // check for big dips every X small intervals ( eg: 4 )
+  const big_profitToSell = 3; // % profit to sell ( eg: 5 )
+  const big_interval = 3; // check for big dips every X small intervals ( eg: 4 )
 
   //loop for checking dips
   useEffect(() => {
@@ -69,7 +69,7 @@ const ControlPanel = () => {
       setBig_Pending(true);
       await FindController(
         "buy",
-        big_dipToBuy,
+        big_dipToBuy * 2,
         big_profitToSell,
         amountPerTrade,
         big_storedPrices,
@@ -84,12 +84,14 @@ const ControlPanel = () => {
     }
   }, [running, big_dipToBuy, interval, big_storedPrices, count, big_pending]);
 
+  const logOrders = async () => {
+    const orders = await GetOrders("finished");
+    console.log(orders);
+  };
+
   return (
     <div className="flex flex-row gap-6">
-      <button
-        className="p-2 border border-white"
-        onClick={() => GetOrders("finished")}
-      >
+      <button className="p-2 border border-white" onClick={() => logOrders()}>
         Get Orders
       </button>
       <button

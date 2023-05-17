@@ -9,18 +9,34 @@ export const SellHandler = async (
   purchasedTokens: PurchasedToken[],
   profitToSell: number
 ) => {
-  console.log("placing sell orders");
-  const orders = await GetOrders("finished");
+  console.log("attempting to find successful buys and place sell orders");
+  let orders = await GetOrders("finished");
 
   if (orders.length > 0) {
-    console.log("length of orders looping through", orders.length);
-    const matchingOrders = returnMatchingOrders(purchasedTokens, orders);
-    console.log(matchingOrders);
-    if (matchingOrders.length > 0) {
+    let matchingOrders;
+
+    let attempts = 0;
+
+    while (attempts < 5) {
+      orders = await GetOrders("finished");
+      matchingOrders = returnMatchingOrders(purchasedTokens, orders);
+      attempts++;
+      if (matchingOrders) {
+        break;
+      }
+      attempts++;
+    }
+
+    if (matchingOrders) {
       try {
         // for each matching order create limit sell for token
         const batchOrder: Order[] = [];
         for (var i = 0; i < matchingOrders.length; i++) {
+          const amountFilled = calcFee(
+            matchingOrders[i].amount,
+            matchingOrders[i].left
+          );
+          const amountAfterFee = calcFee(amountFilled, matchingOrders[i].fee);
           const orderData: Order = {
             text: `t-${makeid(6)}`,
             currency_pair: matchingOrders[i].currency_pair,
@@ -31,14 +47,12 @@ export const SellHandler = async (
             ).toString(),
             account: "spot",
             side: "sell",
-            amount: calcFee(matchingOrders[i].amount, matchingOrders[i].fee),
+            amount: amountAfterFee,
             time_in_force: "gtc",
           };
           batchOrder.push(orderData);
         }
-        console.log("initiated sell order", batchOrder);
         const res = await CreateOrder(batchOrder);
-        console.log("result of sell order", res);
         return res;
       } catch (err) {
         //if api returns error
@@ -46,7 +60,12 @@ export const SellHandler = async (
         return [err];
       }
     } else {
-      return [{ message: "no orders passed to sell handler" }];
+      return [
+        {
+          message:
+            "could not find matched orders - no successful buys on this attempt",
+        },
+      ];
     }
   }
 };

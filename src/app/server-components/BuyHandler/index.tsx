@@ -20,13 +20,13 @@ export const BuyHandler = async (
         account: "spot",
         side: "buy",
         amount: (amountInUSDT / parseFloat(dipsToBuy[i].last)).toString(),
-        time_in_force: "fok",
+        time_in_force: "ioc",
       };
       batchOrder.push(orderData);
     }
     const res = await CreateOrder(batchOrder);
 
-    const succOrders = res.filter((e: any) => e.id);
+    const succOrders = res.filter(({ id }: PurchasedToken) => id);
     if (succOrders.length > 0) {
       return succOrders;
     } else {
