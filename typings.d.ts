@@ -103,3 +103,9 @@ type PurchasedToken = {
   finish_as: string;
   stp_id: number;
 };
+
+type Error = {
+  name?: string;
+  label?: string;
+  message: string;
+};

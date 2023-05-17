@@ -41,10 +41,7 @@ export const SellHandler = async (
             text: `t-${makeid(6)}`,
             currency_pair: matchingOrders[i].currency_pair,
             type: "limit",
-            price: addPercentage(
-              matchingOrders[i].price,
-              profitToSell
-            ).toString(),
+            price: addPercentage(matchingOrders[i].price, profitToSell),
             account: "spot",
             side: "sell",
             amount: amountAfterFee,
@@ -53,19 +50,23 @@ export const SellHandler = async (
           batchOrder.push(orderData);
         }
         const res = await CreateOrder(batchOrder);
+        console.log("sell order response", res);
         return res;
       } catch (err) {
-        //if api returns error
-        console.log(err);
         return [err];
       }
     } else {
       return [
         {
-          message:
-            "could not find matched orders - no successful buys on this attempt",
+          message: "could not find matched orders",
         },
       ];
     }
+  } else {
+    return [
+      {
+        message: "no orders were passed to sell handler",
+      },
+    ];
   }
 };

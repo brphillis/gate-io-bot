@@ -14,15 +14,15 @@ const ControlPanel = () => {
   const [big_pending, setBig_Pending] = useState<boolean>(false);
 
   //small interval settings
-  const amountPerTrade = 6; //dollar value ( eg: 1.5 )
-  const dipToBuy = -2; // % dip to buy ( eg: -5 )
-  const profitToSell = 2; // % profit to sell ( eg: 5 )
-  const interval = 1000; // ms between price checks
+  const amountPerTrade = 30; //dollar value ( eg: 1.5 )
+  const dipToBuy = -8; // % dip to buy ( eg: -5 )
+  const profitToSell = 3; // % profit to sell ( eg: 5 )
+  const interval = 9000; // ms between price checks
 
   //large interval settings
-  const big_dipToBuy = -8; // % dip to buy ( eg: -5 )
-  const big_profitToSell = 3; // % profit to sell ( eg: 5 )
-  const big_interval = 3; // check for big dips every X small intervals ( eg: 4 )
+  const big_dipToBuy = -12; // % dip to buy ( eg: -5 )
+  const big_profitToSell = 4; // % profit to sell ( eg: 5 )
+  const big_interval = 2; // check for big dips every X small intervals ( eg: 4 )
 
   //loop for checking dips
   useEffect(() => {

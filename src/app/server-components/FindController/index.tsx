@@ -34,7 +34,7 @@ export const FindController = async (
   if (storedPrices && newPrices) {
     newPrices.forEach(
       ({ currencyPair, last, changePercentage, quoteVolume }, i) => {
-        const storedName = storedPrices![i].currencyPair;
+        const storedName = storedPrices?.[i]?.currencyPair;
         const newName = currencyPair;
         const oldMatchesNew = storedName === newName;
         const isUSDTPair = newName.includes("_USDT");
@@ -43,10 +43,10 @@ export const FindController = async (
           .split("_")[0]
           .slice(-2)
           .includes("3S");
-        const isFiveLongToken = newName.split("_")[0].slice(-2).includes("3L");
-        const isFiveShortToken = newName.split("_")[0].slice(-2).includes("3S");
-        const dailyChangeUnder = parseFloat(changePercentage) < 110;
-        const baseVolumeOver = parseFloat(quoteVolume) > 80000;
+        const isFiveLongToken = newName.split("_")[0].slice(-2).includes("5L");
+        const isFiveShortToken = newName.split("_")[0].slice(-2).includes("5S");
+        const dailyChangeUnder = parseFloat(changePercentage) < 100;
+        const baseVolumeOver = parseFloat(quoteVolume) > 120000;
         const newPrice = parseFloat(last);
         const oldPrice = parseFloat(storedPrices![i].last);
         const dipAmount = getPercentageChange(newPrice, oldPrice);
@@ -70,49 +70,50 @@ export const FindController = async (
     if (results.length > 0) {
       console.log(`${results.length} DIPS`, results);
       if (mode === "buy") {
-        let attempts = 0;
-        let boughtDips;
+        const boughtDips = await BuyHandler(amountPerTrade, results);
+        const purchaseSuccess = await boughtDips?.some(
+          ({ status }: PurchasedToken) => status === "closed"
+        );
+        const cancelledPurchase = await boughtDips?.every(
+          ({ status }: PurchasedToken) => status === "cancelled"
+        );
 
-        while (attempts < 4) {
-          boughtDips = await BuyHandler(amountPerTrade, results);
-
-          if (boughtDips.some((obj: any) => obj.status !== "cancelled")) {
-            break;
-          }
-
-          attempts++;
-        }
-
-        if (boughtDips.some((obj: any) => obj.status !== "cancelled")) {
-          boughtDips.forEach(({ currency_pair }: PurchasedToken) => {
+        if (purchaseSuccess) {
+          boughtDips?.forEach(({ currency_pair }: PurchasedToken) => {
             console.log(`purchased ${currency_pair}`);
           });
           const successfulPurchases = await SellHandler(
             boughtDips,
             profitToSell
           );
+          const sellSuccess = await successfulPurchases?.some(
+            ({ succeeded }: PurchasedToken) => succeeded === true
+          );
 
-          if (successfulPurchases.some((obj: any) => obj.succeeded === true)) {
-            console.log("result of sell order - ", successfulPurchases);
-            successfulPurchases.forEach(({ currency_pair }: PurchasedToken) => {
-              console.log(`placed sell order for ${currency_pair}`);
-            });
+          if (sellSuccess) {
+            successfulPurchases?.forEach(
+              ({ currency_pair }: PurchasedToken) => {
+                console.log(`placed sell order for ${currency_pair}`);
+              }
+            );
           } else {
-            successfulPurchases.forEach((error: any) => {
-              console.log("failed to sell order - ", error.message);
+            successfulPurchases?.forEach(({ message }: Error) => {
+              console.log("failed to sell order - ", message);
             });
           }
         }
-        if (boughtDips.every((obj: any) => obj.status === "cancelled")) {
+        if (cancelledPurchase) {
           console.log("orders could not be filled");
-        } else {
-          boughtDips.forEach((error: any) => {
-            console.log(
-              "immediate or cancel order has cancelled",
-              error.message
-            );
-          });
+          console.log(boughtDips);
         }
+        // else {
+        //   boughtDips.forEach((error: any) => {
+        //     console.log(
+        //       "immediate or cancel order has cancelled",
+        //       error.message
+        //     );
+        //   });
+        // }
       }
     } else {
       if (!bigInterval) {

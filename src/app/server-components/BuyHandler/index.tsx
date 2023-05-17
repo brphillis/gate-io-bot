@@ -16,7 +16,7 @@ export const BuyHandler = async (
         text: `t-${makeid(6)}`,
         currency_pair: dipsToBuy[i].currencyPair,
         type: "limit",
-        price: addPercentage(dipsToBuy[i].last, 0.1),
+        price: addPercentage(dipsToBuy[i].last, 0.05),
         account: "spot",
         side: "buy",
         amount: (amountInUSDT / parseFloat(dipsToBuy[i].last)).toString(),
@@ -33,7 +33,6 @@ export const BuyHandler = async (
       return res;
     }
   } catch (err) {
-    //if api returns error
     return [err];
   }
 };
