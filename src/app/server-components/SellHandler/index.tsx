@@ -5,21 +5,20 @@ import { CreateOrder, GetOrders } from "../../api/page";
 import { addPercentage, calcFee } from "@/app/utility/NumberHelpers";
 import { makeid } from "@/app/utility/StringHelpers";
 
-export const SellHandler = async (
-  purchasedTokens: PurchasedToken[],
-  profitToSell: number
-) => {
-  console.log("attempting to find successful buys and place sell orders");
+export const SellHandler = async (Orders: Order[], profitToSell: number) => {
+  console.log("placing sell orders");
+
   let orders = await GetOrders("finished");
 
   if (orders.length > 0) {
     let matchingOrders;
 
+    // in case of api lag we will retry finding the processed order
     let attempts = 0;
 
-    while (attempts < 5) {
+    while (attempts < 10) {
       orders = await GetOrders("finished");
-      matchingOrders = returnMatchingOrders(purchasedTokens, orders);
+      matchingOrders = returnMatchingOrders(Orders, orders);
       attempts++;
       if (matchingOrders) {
         break;
@@ -29,14 +28,16 @@ export const SellHandler = async (
 
     if (matchingOrders) {
       try {
-        // for each matching order create limit sell for token
         const batchOrder: Order[] = [];
+
+        // we use a for loop for the minimal performance gain
         for (var i = 0; i < matchingOrders.length; i++) {
           const amountFilled = calcFee(
             matchingOrders[i].amount,
             matchingOrders[i].left
           );
           const amountAfterFee = calcFee(amountFilled, matchingOrders[i].fee);
+
           const orderData: Order = {
             text: `t-${makeid(6)}`,
             currency_pair: matchingOrders[i].currency_pair,
@@ -50,8 +51,13 @@ export const SellHandler = async (
           batchOrder.push(orderData);
         }
         const res = await CreateOrder(batchOrder);
-        console.log("sell order response", res);
-        return res;
+
+        // successful orders will have an id key
+        const successfulOrders = await res.filter(({ id }: Order) => id);
+
+        if (successfulOrders.length > 0) {
+          return successfulOrders;
+        } else return [res];
       } catch (err) {
         return [err];
       }
