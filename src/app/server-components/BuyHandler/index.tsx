@@ -52,6 +52,6 @@ export const BuyHandler = async (amountInUSDT: number, dipsToBuy: Ticker[]) => {
       return successfulOrders;
     } else return [res];
   } catch (err) {
-    return [err];
+    return [{ err }];
   }
 };

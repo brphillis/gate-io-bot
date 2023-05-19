@@ -11,6 +11,8 @@ export const FindController = async (
   profitToSell: number,
   amountPerTrade: number,
   storedPrices: Ticker[] | undefined,
+  dayVolumeOver: number,
+  dayChangeUnder: number,
   bigInterval?: boolean
 ) => {
   const fetchPrices = async () => {
@@ -18,7 +20,7 @@ export const FindController = async (
       const res: Ticker[] = await GetPrices();
       if (!storedPrices) {
         storedPrices = res;
-        console.log("bot started, initial prices - ", storedPrices);
+        console.log("bot initiated!");
         console.log(`spending $${amountPerTrade} per trade`);
         console.log(`buying the dips at ${dipToBuy}%`);
         console.log(`selling at a profit of ${profitToSell}%`);
@@ -34,39 +36,51 @@ export const FindController = async (
   if (storedPrices && newPrices) {
     newPrices.forEach(
       ({ currencyPair, last, changePercentage, quoteVolume }, i) => {
-        const storedName = storedPrices?.[i]?.currencyPair;
-        const newName = currencyPair;
-        const oldMatchesNew = storedName === newName;
-        const isUSDTPair = newName.includes("_USDT");
-        const is3LongToken = newName.split("_")[0].slice(-2).includes("3L");
-        const is3ShortToken = newName.split("_")[0].slice(-2).includes("3S");
-        const is5LongToken = newName.split("_")[0].slice(-2).includes("5L");
-        const is5ShortToken = newName.split("_")[0].slice(-2).includes("5S");
-        const dailyChangeUnder = parseFloat(changePercentage) < 130;
-        const baseVolumeOver = parseFloat(quoteVolume) > 50000;
-        const newPrice = parseFloat(last);
-        const oldPrice = parseFloat(storedPrices![i].last);
-        const dipAmount = getPercentageChange(newPrice, oldPrice);
+        if (storedPrices) {
+          const storedName = storedPrices?.[i]?.currencyPair;
+          const newName = currencyPair;
+          const oldMatchesNew = storedName === newName;
+          const isUSDTPair = newName.includes("_USDT");
+          const is3LongToken = newName.split("_")[0].slice(-2).includes("3L");
+          const is3ShortToken = newName.split("_")[0].slice(-2).includes("3S");
+          const is5LongToken = newName.split("_")[0].slice(-2).includes("5L");
+          const is5ShortToken = newName.split("_")[0].slice(-2).includes("5S");
+          const dailyChangeUnder =
+            parseFloat(changePercentage) < dayChangeUnder;
+          const baseVolumeOver = parseFloat(quoteVolume) > dayVolumeOver;
+          const newPrice = last;
+          const oldPrice = storedPrices[i].last;
+          const dipAmount = getPercentageChange(newPrice, oldPrice);
 
-        if (
-          dipAmount < dipToBuy &&
-          isUSDTPair &&
-          oldMatchesNew &&
-          !is3ShortToken &&
-          !is3LongToken &&
-          !is5ShortToken &&
-          !is5LongToken &&
-          // &&
-          // dailyChangeUnder
-          baseVolumeOver
-        ) {
-          results.push({ currencyPair, last, quoteVolume, change: dipAmount });
+          if (
+            dipAmount < dipToBuy &&
+            isUSDTPair &&
+            oldMatchesNew &&
+            !is3ShortToken &&
+            !is3LongToken &&
+            !is5ShortToken &&
+            !is5LongToken &&
+            dailyChangeUnder &&
+            baseVolumeOver
+          ) {
+            results.push({
+              currencyPair,
+              last,
+              quoteVolume,
+              change: dipAmount,
+            });
+          }
         }
       }
     );
 
     if (results.length > 0) {
-      console.log(`${results.length} DIPS`, results);
+      results.forEach(({ currencyPair, change }: Ticker) => {
+        console.log(
+          `${"found dip! - " + currencyPair + " - " + "change: " + change}`
+        );
+      });
+
       if (mode === "buy") {
         // handing the purchase order
         const boughtDips = await BuyHandler(amountPerTrade, results);
@@ -118,7 +132,6 @@ export const FindController = async (
         // passing the purchase order errors
         if (purchaseCancelled) {
           console.log("orders could not be filled");
-          console.log(boughtDips);
         }
         if (purchaseError) {
           purchaseError.forEach(({ message }: Error) => {

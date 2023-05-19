@@ -2,7 +2,7 @@
 
 import { returnMatchingOrders } from "@/app/utility/OrderHelpers";
 import { CreateOrder, GetOrders } from "../../api/page";
-import { addPercentage, calcFee } from "@/app/utility/NumberHelpers";
+import { addPercentage, subtractNumbers } from "@/app/utility/NumberHelpers";
 import { makeid } from "@/app/utility/StringHelpers";
 
 export const SellHandler = async (Orders: Order[], profitToSell: number) => {
@@ -13,30 +13,33 @@ export const SellHandler = async (Orders: Order[], profitToSell: number) => {
   if (orders.length > 0) {
     let matchingOrders;
 
-    // in case of api lag we will retry finding the processed order
+    // in case of delay we will retry finding the processed order
     let attempts = 0;
 
-    while (attempts < 10) {
+    while (attempts < 50) {
       orders = await GetOrders("finished");
       matchingOrders = returnMatchingOrders(Orders, orders);
       attempts++;
-      if (matchingOrders) {
+      if (matchingOrders && matchingOrders.length > 0) {
         break;
       }
       attempts++;
     }
 
-    if (matchingOrders) {
+    if (matchingOrders && matchingOrders.length > 0) {
       try {
         const batchOrder: Order[] = [];
 
         // we use a for loop for the minimal performance gain
         for (var i = 0; i < matchingOrders.length; i++) {
-          const amountFilled = calcFee(
+          const amountFilled = subtractNumbers(
             matchingOrders[i].amount,
             matchingOrders[i].left
           );
-          const amountAfterFee = calcFee(amountFilled, matchingOrders[i].fee);
+          const amountAfterFee = subtractNumbers(
+            amountFilled,
+            matchingOrders[i].fee
+          );
 
           const orderData: Order = {
             text: `t-${makeid(6)}`,
@@ -59,7 +62,7 @@ export const SellHandler = async (Orders: Order[], profitToSell: number) => {
           return successfulOrders;
         } else return [res];
       } catch (err) {
-        return [err];
+        return [{ err }];
       }
     } else {
       return [
