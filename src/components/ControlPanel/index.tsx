@@ -3,8 +3,10 @@ import { GetOrders } from "@/app/api/page";
 import { useEffect, useState } from "react";
 import { FindController } from "@/app/server-components/FindController";
 import { runBinanceScrape, stopBinanceScrape } from "@/app/api/binance";
+import { makeid } from "@/app/utility/StringHelpers";
 
 const ControlPanel = () => {
+  const [messages, setMessages] = useState<string[]>([]);
   const [count, setCount] = useState<number>(0);
   const [storedPrices, setStoredPrices] = useState<Ticker[] | undefined>();
   const [big_storedPrices, setBig_StoredPrices] = useState<
@@ -21,6 +23,7 @@ const ControlPanel = () => {
   const amountPerTrade = 5; //dollar value ( eg: 1.5 )
   const dayVolumeOver = 140000; //only trade with tokens that have daily volume over X
   const dayChangeUnder = 120; // only trade with tokens with daily change under X
+  const dayChangeOver = 0; // only trade with tokens with daily change under X
 
   //small interval settings
   const dipToBuy = -6; // % dip to buy ( eg: -5 )
@@ -38,16 +41,19 @@ const ControlPanel = () => {
 
     const updatePrices = async () => {
       setPending(true);
-      const newPrices = await FindController(
+      const { newPrices, messages: newMessages } = await FindController(
         "buy",
         dipToBuy,
         profitToSell,
         amountPerTrade,
         storedPrices,
         dayVolumeOver,
-        dayChangeUnder
+        dayChangeUnder,
+        dayChangeOver
       );
       setStoredPrices(newPrices as Ticker[]);
+      setMessages([...newMessages, ...messages]);
+
       if (count === 0) {
         setBig_StoredPrices(newPrices as Ticker[]);
       }
@@ -70,14 +76,14 @@ const ControlPanel = () => {
         clearTimeout(timeoutId);
       }
     };
-  }, [running, dipToBuy, interval, storedPrices, count, pending]);
+  }, [running, dipToBuy, interval, storedPrices, count, pending, messages]);
 
   //loop for checking larger dips at larger intervals
   useEffect(() => {
     const updateBigPrices = async () => {
       const bigInterval = true;
       setBig_Pending(true);
-      await FindController(
+      const { messages: newMessages } = await FindController(
         "buy",
         big_dipToBuy,
         big_profitToSell,
@@ -85,8 +91,10 @@ const ControlPanel = () => {
         big_storedPrices,
         dayVolumeOver,
         dayChangeUnder,
+        dayChangeOver,
         bigInterval
       );
+      setMessages([...newMessages, ...messages]);
       setBig_Pending(false);
       setCount(0);
     };
@@ -94,7 +102,15 @@ const ControlPanel = () => {
     if (running && !big_pending && count === big_interval) {
       updateBigPrices();
     }
-  }, [running, big_dipToBuy, interval, big_storedPrices, count, big_pending]);
+  }, [
+    running,
+    big_dipToBuy,
+    interval,
+    big_storedPrices,
+    count,
+    big_pending,
+    messages,
+  ]);
 
   const logOrders = async () => {
     const orders = await GetOrders("finished");
@@ -112,28 +128,45 @@ const ControlPanel = () => {
   };
 
   return (
-    <div className="flex flex-row gap-6">
-      <button className="p-2 border border-white" onClick={() => logOrders()}>
+    <div className="flex flex-row flex-wrap gap-6">
+      {/* <button className="p-2 border border-white" onClick={() => logOrders()}>
         Get Orders
-      </button>
-      <button
-        className="p-2 border border-white"
-        onClick={() => setRunning(true)}
-      >
-        Start Price Watcher
-      </button>
-      <button
-        className="p-2 border border-white"
-        onClick={() => setRunning(false)}
-      >
-        Stop Price Watcher
-      </button>
+      </button> */}
+      <div className="flex flex-col items-center justify-center border-white border p-6 rounded-md">
+        <div className="flex flex-row justify-center gap-12">
+          {/* PURCHASE BOT BUTTON */}
+          <div className="flex flex-col items-center">
+            <div className="font-white">Purchase Bot</div>
+            <button
+              className="p-2 border border-white mt-2 w-[120px]"
+              onClick={() => setRunning(!running)}
+            >
+              {running ? "Running" : "Stopped"}
+            </button>
+          </div>
 
-      <button className="p-2 border border-white" onClick={toggleBinanceScrape}>
-        {binanceScrape
-          ? "Binance New Listing Scraping ON"
-          : "Binance New Listing Scraping OFF"}
-      </button>
+          {/* BINANCE WATCHER CONTROL BUTTON */}
+          <div className="flex flex-col items-center">
+            <div className="font-white">Binance Watcher</div>
+            <button
+              className="p-2 border border-white mt-2 w-[120px]"
+              onClick={toggleBinanceScrape}
+            >
+              {binanceScrape ? "Running" : "Stopped"}
+            </button>
+          </div>
+        </div>
+
+        {/* MESSAGES */}
+        <div className="relative p-2 border border-white mt-4 w-[360px] h-[320px] overflow-hidden">
+          <div className="relative flex flex-col-reverse  h-[100%] w-[100%]">
+            {messages &&
+              messages.map((e: any) => {
+                return <p key={makeid(10)}>{e}</p>;
+              })}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

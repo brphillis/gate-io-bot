@@ -5,6 +5,8 @@ import { GetPrices } from "../../api/page";
 import { BuyHandler } from "../BuyHandler";
 import { SellHandler } from "../SellHandler";
 
+let messages: string[] = [];
+
 export const FindController = async (
   mode: "buy" | "find",
   dipToBuy: number,
@@ -13,21 +15,23 @@ export const FindController = async (
   storedPrices: Ticker[] | undefined,
   dayVolumeOver: number,
   dayChangeUnder: number,
+  dayChangeOver: number,
   bigInterval?: boolean
 ) => {
   const fetchPrices = async () => {
+    messages = [];
     try {
       const res: Ticker[] = await GetPrices();
       if (!storedPrices) {
         storedPrices = res;
-        console.log("bot initiated!");
-        console.log(`spending $${amountPerTrade} per trade`);
-        console.log(`buying the dips at ${dipToBuy}%`);
-        console.log(`selling at a profit of ${profitToSell}%`);
+        messages.unshift("bot initiated!");
+        messages.unshift(`spending $${amountPerTrade} per trade`);
+        messages.unshift(`buying the dips at ${dipToBuy}%`);
+        messages.unshift(`selling at a profit of ${profitToSell}%`);
       }
       return res;
-    } catch (err) {
-      console.log(err);
+    } catch ({ message }: any) {
+      messages.unshift(message);
     }
   };
   const newPrices = await fetchPrices();
@@ -47,6 +51,7 @@ export const FindController = async (
           const is5ShortToken = newName.split("_")[0].slice(-2).includes("5S");
           const dailyChangeUnder =
             parseFloat(changePercentage) < dayChangeUnder;
+          const dailyChangeOver = parseFloat(changePercentage) > dayChangeOver;
           const baseVolumeOver = parseFloat(quoteVolume) > dayVolumeOver;
           const newPrice = last;
           const oldPrice = storedPrices[i].last;
@@ -61,6 +66,7 @@ export const FindController = async (
             !is5ShortToken &&
             !is5LongToken &&
             dailyChangeUnder &&
+            dailyChangeOver &&
             baseVolumeOver
           ) {
             results.push({
@@ -76,7 +82,7 @@ export const FindController = async (
 
     if (results.length > 0) {
       results.forEach(({ currencyPair, change }: Ticker) => {
-        console.log(
+        messages.unshift(
           `${"found dip! - " + currencyPair + " - " + "change: " + change}`
         );
       });
@@ -97,7 +103,7 @@ export const FindController = async (
 
         if (purchaseSuccess) {
           boughtDips?.forEach(({ currency_pair }: Order) => {
-            console.log(`purchased ${currency_pair}`);
+            messages.unshift(`purchased ${currency_pair}`);
           });
 
           //handling the sell order
@@ -113,42 +119,42 @@ export const FindController = async (
 
           if (sellSuccess) {
             sellOrders?.forEach(({ currency_pair }: Order) => {
-              console.log(`placed sell order for ${currency_pair}`);
+              messages.unshift(`placed sell order for ${currency_pair}`);
             });
           }
 
           // passing the sell order errors
           if (sellCancelled) {
-            console.log("a sell order has failed");
+            messages.unshift("a sell order has failed");
             console.log(sellOrders);
           }
           if (sellError) {
             sellOrders?.forEach(({ message }: Error) => {
-              console.log("failed to sell order - ", message);
+              messages.unshift("failed to sell order - ", message);
             });
           }
         }
 
         // passing the purchase order errors
         if (purchaseCancelled) {
-          console.log("orders could not be filled");
+          messages.unshift("orders could not be filled");
         }
         if (purchaseError) {
           purchaseError.forEach(({ message }: Error) => {
-            console.log("purchase error: ", message);
+            messages.unshift("purchase error: ", message);
           });
         }
       }
     } else {
       if (!bigInterval) {
-        console.log("no dips");
+        messages.unshift("no dips");
       }
       if (bigInterval) {
-        console.log("no big dips");
+        messages.unshift("no big dips");
       }
     }
   } else {
-    console.log("could not find prices to store");
+    messages.unshift("could not find prices to store");
   }
-  return newPrices;
+  return { newPrices: newPrices, messages: messages };
 };
