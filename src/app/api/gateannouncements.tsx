@@ -31,6 +31,20 @@ const getTickersFromString = (inputString: string): string[] => {
   return tickers;
 };
 
+const arraysAreIndentical = (arr1: string[], arr2: string[]) => {
+  // Check if the lengths of the arrays are the same
+  if (arr1.length !== arr2.length) {
+    return false;
+  }
+
+  // Convert the arrays to strings and compare them
+  const string1 = JSON.stringify(arr1);
+  const string2 = JSON.stringify(arr2);
+
+  // Compare the strings
+  return string1 === string2;
+};
+
 export const scrapeGateArticles = async (): Promise<string[]> => {
   console.log("running gate scan");
   const url = "https://www.gate.io/zh-tw/articlelist/ann";
@@ -53,7 +67,7 @@ export const scrapeGateArticles = async (): Promise<string[]> => {
     const newTickers = getTickersFromString(listingAnnouncement);
 
     if (lastTickers) {
-      if (lastTickers !== newTickers) {
+      if (!arraysAreIndentical(lastTickers, newTickers)) {
         const newUSDTTickers = newTickers.map((e: string) => {
           return e + "_USDT";
         });
