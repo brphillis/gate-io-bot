@@ -1,6 +1,6 @@
 "use server";
 
-import { makeid } from "../utility/StringHelpers";
+import { makeid } from "../server-utility/StringHelpers";
 import { CreateOrder } from "./page";
 
 let active = true;
@@ -25,7 +25,7 @@ export const getBinancePurchases = async () => {
 };
 
 export const scrapeArticleTitles = async () => {
-  console.log("running");
+  console.log("running binance scan");
   const url =
     "https://www.binance.com/bapi/composite/v1/public/cms/article/catalog/list/query?catalogId=48&pageNo=1&pageSize=1";
 

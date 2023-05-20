@@ -1,8 +1,8 @@
 "use server";
 
-import { addPercentage } from "@/app/utility/NumberHelpers";
+import { addPercentage } from "@/app/server-utility/NumberHelpers";
 import { CreateOrder } from "../../api/page";
-import { makeid } from "@/app/utility/StringHelpers";
+import { makeid } from "@/app/server-utility/StringHelpers";
 
 export const BuyHandler = async (amountInUSDT: number, dipsToBuy: Ticker[]) => {
   console.log("attempting to buy..");
@@ -46,7 +46,9 @@ export const BuyHandler = async (amountInUSDT: number, dipsToBuy: Ticker[]) => {
     }
 
     // successful orders will have an id key
-    const successfulOrders = await res.filter(({ id }: Order) => id);
+    const successfulOrders = await res.filter(
+      ({ id, status }: Order) => id && status !== "cancelled"
+    );
 
     if (successfulOrders.length > 0) {
       return successfulOrders;

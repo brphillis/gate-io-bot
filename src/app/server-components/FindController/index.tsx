@@ -1,6 +1,9 @@
 "use server";
 
-import { getPercentageChange } from "@/app/utility/NumberHelpers";
+import {
+  decimalsStartWithMoreThanThreeZeros,
+  getPercentageChange,
+} from "@/app/server-utility/NumberHelpers";
 import { GetPrices } from "../../api/page";
 import { BuyHandler } from "../BuyHandler";
 import { SellHandler } from "../SellHandler";
@@ -56,6 +59,8 @@ export const FindController = async (
           const newPrice = last;
           const oldPrice = storedPrices[i].last;
           const dipAmount = getPercentageChange(newPrice, oldPrice);
+          const correctDecimals =
+            !decimalsStartWithMoreThanThreeZeros(newPrice);
 
           if (
             dipAmount < dipToBuy &&
@@ -66,7 +71,8 @@ export const FindController = async (
             !is5ShortToken &&
             !is5LongToken &&
             dailyChangeUnder &&
-            dailyChangeOver &&
+            correctDecimals &&
+            // dailyChangeOver &&
             baseVolumeOver
           ) {
             results.push({
@@ -147,10 +153,10 @@ export const FindController = async (
       }
     } else {
       if (!bigInterval) {
-        messages.unshift("no dips");
+        messages.unshift("searching for dips...");
       }
       if (bigInterval) {
-        messages.unshift("no big dips");
+        messages.unshift("searching for dips...");
       }
     }
   } else {

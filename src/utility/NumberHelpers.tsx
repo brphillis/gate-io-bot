@@ -1,5 +1,3 @@
-"use server";
-
 import Decimal from "decimal.js";
 
 export const getPercentageChange = (
