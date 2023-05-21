@@ -2,6 +2,8 @@
 
 Welcome to the GATE IO Trading Bot, developed by Brock Phillis. This trading bot is designed specifically for the Gate.IO exchange (https://www.gate.io/) and comes with a range of features to automate your trading experience.
 
+<a href="https://ibb.co/ZJDf6Xg"><img src="https://i.ibb.co/4frFZtS/Untitled.png" alt="Untitled" border="0"></a>
+
 ### Features
 
 - **Instant Buy and Sell**: The bot scans the exchange at regular intervals and instantly buys tokens that have dropped a certain amount since the last scan. It then places a sell order automatically.
