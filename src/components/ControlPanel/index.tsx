@@ -189,10 +189,10 @@ const ControlPanel = () => {
     <div
       className="
     flex flex-col flex-wrap items-center justify-center gap-6
-    p-6 h-max max-w-[90vw] w-[680px]
-    border-white border rounded-md"
+    p-6 h-max max-w-[99vw] w-[680px]
+     rounded-md bg-zinc-900/70"
     >
-      <div className="flex flex-row flex-wrap justify-center gap-12 max-w-[98vw]">
+      <div className="flex flex-row flex-wrap justify-center gap-12 max-w-[99vw]">
         {/* ORDERS */}
         <Link href="https://github.com/brphillis" target="_blank">
           <img
@@ -204,9 +204,9 @@ const ControlPanel = () => {
 
         {/* PURCHASE BOT BUTTON */}
         <div className="flex flex-col items-center">
-          <div className="font-white">Purchase Bot</div>
+          <div className="text-white/80 mb-1">Purchase Bot</div>
           <button
-            className="p-2 border border-white mt-2 w-[120px]"
+            className={`btn w-[120px] ${running ? "btn-success" : "btn-error"}`}
             onClick={() => setRunning(!running)}
           >
             {running ? "Running" : "Stopped"}
@@ -215,9 +215,11 @@ const ControlPanel = () => {
 
         {/* BINANCE WATCHER CONTROL BUTTON */}
         <div className="flex flex-col items-center">
-          <div className="font-white">Binance Watcher</div>
+          <div className="text-white/80 mb-1">Binance Watcher</div>
           <button
-            className="p-2 border border-white mt-2 w-[120px]"
+            className={`btn w-[120px] ${
+              binanceScrape ? "btn-success" : "btn-error"
+            }`}
             onClick={toggleBinanceScrape}
           >
             {binanceScrape ? "Running" : "Stopped"}
@@ -226,9 +228,11 @@ const ControlPanel = () => {
 
         {/* GATE WATCHER CONTROL BUTTON */}
         <div className="flex flex-col items-center">
-          <div className="font-white">Gate Watcher</div>
+          <div className="text-white/80 mb-1">Gate Watcher</div>
           <button
-            className="p-2 border border-white mt-2 w-[120px]"
+            className={`btn w-[120px] ${
+              gateScrape ? "btn-success" : "btn-error"
+            }`}
             onClick={toggleGateScrape}
           >
             {gateScrape ? "Running" : "Stopped"}
@@ -389,7 +393,7 @@ const ControlPanel = () => {
       </div>
 
       {/* MESSAGES */}
-      <div className="relative p-2 border border-white mt-4 w-full h-[320px] overflow-hidden">
+      <div className="relative p-2 border border-white/50 rounded-lg mt-4 w-full h-[320px] overflow-hidden">
         <div className="relative flex flex-col-reverse  h-[100%] w-[100%]">
           {queryCount > 0 && <p>query({queryCount})...</p>}
           {messages.length > 1 &&
