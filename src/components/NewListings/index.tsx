@@ -1,8 +1,8 @@
 "use client";
 
 import { GetCurrencies } from "@/app/api/page";
+import { filterArrayDifference } from "@/app/server-utility/ArrayHelpers";
 import { useEffect, useState } from "react";
-import { filterArrayDifference } from "@/utility/ArrayHelpers";
 
 type Props = {};
 

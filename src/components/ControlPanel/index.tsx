@@ -2,10 +2,11 @@
 import { GetOrders } from "@/app/api/page";
 import { useEffect, useState } from "react";
 import { FindController } from "@/app/server-components/FindController";
-import { runBinanceScrape, stopBinanceScrape } from "@/app/api/binance";
+import { runBinanceScrape, stopBinanceScrape } from "@/app/api/binance-scraper";
 import { makeid } from "@/app/server-utility/StringHelpers";
-import { runGateScrape, stopGateScrape } from "@/app/api/gateannouncements";
+import { runGateScrape, stopGateScrape } from "@/app/api/gate-scraper";
 import Link from "next/link";
+import Image from "next/image";
 
 const ControlPanel = () => {
   const [queryCount, setQueryCount] = useState<number>(0);
@@ -20,8 +21,6 @@ const ControlPanel = () => {
   const [big_pending, setBig_Pending] = useState<boolean>(false);
   const [binanceScrape, setBinanceScrape] = useState<boolean>(false);
   const [binanceSpend, setBinanceSpend] = useState<number>(30);
-  const [binancePurchases, setBinancePurchases] = useState<Order[]>();
-
   const [gateScrape, setGateScrape] = useState<boolean>(false);
   const [gateSpend, setGateSpend] = useState<number>(30);
 
@@ -61,7 +60,7 @@ const ControlPanel = () => {
       setStoredPrices(newPrices as Ticker[]);
 
       setQueryCount(queryCount + 1);
-      setMessages((e: any) => {
+      setMessages(() => {
         if (newMessages[0] !== messages[0]) {
           return [...newMessages, ...messages];
         } else return messages;
@@ -195,7 +194,9 @@ const ControlPanel = () => {
       <div className="flex flex-row flex-wrap justify-center gap-12 max-w-[99vw]">
         {/* ORDERS */}
         <Link href="https://github.com/brphillis" target="_blank">
-          <img
+          <Image
+            width="0"
+            height="0"
             className="h-14 w-14 mt-4 cursor-pointer"
             alt="githubLogo"
             src="./github-mark-white.svg"

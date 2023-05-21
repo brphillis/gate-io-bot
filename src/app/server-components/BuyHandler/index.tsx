@@ -32,14 +32,14 @@ export const BuyHandler = async (amountInUSDT: number, dipsToBuy: Ticker[]) => {
     let res = await CreateOrder(batchOrder);
 
     // we will retry for a successful purchase X times to snipe the price
-    if (res.every((e: any) => e.status === "cancelled")) {
+    if (res.every(({ status }: Order) => status === "cancelled")) {
       let attempts = 0;
 
       while (attempts < 50) {
         res = await CreateOrder(batchOrder);
         attempts++;
 
-        if (!res.every((e: any) => e.status === "cancelled")) {
+        if (!res.every(({ status }: Order) => status === "cancelled")) {
           break;
         }
       }
