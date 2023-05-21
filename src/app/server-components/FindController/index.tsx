@@ -12,7 +12,8 @@ let messages: string[] = [];
 
 export const FindController = async (
   mode: "buy" | "find",
-  dipToBuy: number,
+  minDipToBuy: number,
+  maxDipToBuy: number,
   profitToSell: number,
   amountPerTrade: number,
   storedPrices: Ticker[] | undefined,
@@ -29,7 +30,9 @@ export const FindController = async (
         storedPrices = res;
         messages.unshift("bot initiated!");
         messages.unshift(`spending $${amountPerTrade} per trade`);
-        messages.unshift(`buying the dips at ${dipToBuy}%`);
+        messages.unshift(
+          `buying the dips at %${minDipToBuy} to %${maxDipToBuy}`
+        );
         messages.unshift(`selling at a profit of ${profitToSell}%`);
       }
       return res;
@@ -63,7 +66,8 @@ export const FindController = async (
             !decimalsStartWithMoreThanThreeZeros(newPrice);
 
           if (
-            dipAmount < dipToBuy &&
+            dipAmount <= minDipToBuy &&
+            dipAmount >= maxDipToBuy &&
             isUSDTPair &&
             oldMatchesNew &&
             !is3ShortToken &&
@@ -72,7 +76,7 @@ export const FindController = async (
             !is5LongToken &&
             dailyChangeUnder &&
             correctDecimals &&
-            // dailyChangeOver &&
+            dailyChangeOver &&
             baseVolumeOver
           ) {
             results.push({

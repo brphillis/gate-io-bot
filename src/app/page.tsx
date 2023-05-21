@@ -3,8 +3,7 @@ import ControlPanel from "@/components/ControlPanel";
 
 export const Home = async () => {
   return (
-    <div className="flex flex-row items-center justify-center gap-12 h-[calc(100vh-56px)]">
-      {/* <NewListings /> */}
+    <div className="h-max min-h-screen flex justify-center items-center">
       <ControlPanel />
     </div>
   );

@@ -1,4 +1,3 @@
-import NavBar from "@/components/NavBar";
 import "./globals.css";
 
 export const metadata = {
@@ -12,10 +11,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="w-[100vw] overflow-x-hidden">
-        <NavBar />
-        {children}
-      </body>
+      <body className="w-[100vw] overflow-x-hidden">{children}</body>
     </html>
   );
 }
